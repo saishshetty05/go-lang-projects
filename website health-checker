@@ -1,0 +1,60 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"net"
+	"os"
+	"time"
+
+	"github.com/urfave/cli/v2" // Updated import to v2
+)
+
+func main() {
+	app := &cli.App{
+		Name:  "Healthchecker",
+		Usage: "Tool to check whether a website is running or not",
+		Flags: []cli.Flag{
+			&cli.StringFlag{
+				Name:     "domain",
+				Aliases:  []string{"d"}, // Fixed syntax
+				Usage:    "Domain name to check",
+				Required: true,
+			},
+			&cli.StringFlag{
+				Name:     "port", // Changed Port to port for consistency
+				Aliases:  []string{"p"},
+				Usage:    "Port number to check",
+				Required: false,
+			},
+		},
+		Action: func(c *cli.Context) error {
+			port := c.String("port") // Fixed syntax
+			if port == "" {
+				port = "80"
+			}
+			status := check(c.String("domain"), port)
+			fmt.Println(status)
+			return nil
+		},
+	}
+
+	err := app.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func check(destination string, port string) string {
+	address := destination + ":" + port
+	timeout := time.Duration(2 * time.Second)
+	conn, err := net.DialTimeout("tcp", address, timeout)
+	var status string
+
+	if err != nil {
+		status = fmt.Sprintf("[Down] %v is unreachable ,\n Error : %v", destination, err)
+	} else {
+		status = fmt.Sprintf("[UP] %v is reachable,\n From:=%v\n To:%v\n", destination, conn.LocalAddr(), conn.RemoteAddr())
+	}
+	return status
+}
